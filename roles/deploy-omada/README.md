@@ -16,7 +16,7 @@ All variable that are needed to determine Version Numbers are automatically gene
 Dependencies
 ------------
 
-This Role is dependent upon the Ansible Galaxy Collection community.general
+This Role is dependent upon the Ansible Galaxy Collection `community.general`
 
 Example Playbook
 ----------------
