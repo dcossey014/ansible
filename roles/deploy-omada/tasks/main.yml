@@ -129,7 +129,7 @@
     delegate_to: localhost
 
   - name: Download latest Omada Software as of 30 December 2022
-    import_tasks: download-latest-omada.yml
+    import_tasks: download-omada-v5.7.4.yml
   when: ( not dir_data.results[2].stat.exists )
 
 
