@@ -1,19 +1,19 @@
 ---
 # tasks file for deploy-omada
-#- name: Install necessary packages for Omada Controller
-#  package: 
-#    name: "{{ item }}" 
-#    state: present
-#  with_items:
-#  - curl
-#  - java-1.8.0-openjdk.x86_64
-#  - java-1.8.0-openjdk-headless.x86_64
-#  - java-11-openjdk-devel.x86_64
-#  - java-11-openjdk-headless.x86_64
-#  - java-11-openjdk.x86_64
-#  - gcc
-#  - make
-#  - autoconf
+- name: Install necessary packages for Omada Controller
+  package: 
+    name: "{{ item }}" 
+    state: present
+  with_items:
+  - curl
+  - java-1.8.0-openjdk.x86_64
+  - java-1.8.0-openjdk-headless.x86_64
+  - java-11-openjdk-devel.x86_64
+  - java-11-openjdk-headless.x86_64
+  - java-11-openjdk.x86_64
+  - gcc
+  - make
+  - autoconf
 
 - name: Get installed versions on system
   package_facts:
