@@ -1,0 +1,7 @@
+- hosts: omadav5
+  become: yes
+  become_method: sudo
+  vars_files:
+    - homelab.vault
+  roles:
+     - deploy-omada

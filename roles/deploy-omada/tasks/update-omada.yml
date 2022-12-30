@@ -1,0 +1,107 @@
+---
+- name: Get Omada Controller Software Versions in Role-Path/files/omada Directory
+  find:
+    paths: "{{ role_path }}/files/omada/"
+    use_regex: true
+    pattern: "^Omada_SDN_Controller.*"
+  delegate_to: localhost
+  register: omada_file_vers
+
+- name: Create list of Omada versions in {{ role_path }}/files/omada
+  set_fact:
+    omada_file_ver: "{{ omada_file_ver | default([]) + [ item.path | regex_findall('.*Omada_SDN_Controller_v([0-9]+\\.[0-9]+\\.[0-9]+)_Linux_x64.tar.gz.*') | last ] }}"
+  with_items: " {{ omada_file_vers.files }}"
+
+- name: Set Latest Omada Software Version
+  set_fact:
+    omada_latest_ver: "{{ omada_file_ver | community.general.version_sort | last | trim }}"
+
+- name: Get Installed Omada Controller Software Version
+  find:
+    paths: "/opt/tplink/EAPController"
+    use_regex: true
+    pattern: "^Omada_SDN_Controller.*"
+  register: omada_sys_vers
+
+- name: Set Installed Omada Controller Software Version
+  set_fact:
+    omada_sys_ver: "{{ item.path | regex_findall('.*Omada_SDN_Controller_v([0-9]+\\.[0-9]+\\.[0-9]+)_Linux_x64.txt') | last }}"
+  with_items: " {{ omada_sys_vers.files }}"
+
+- name: Set Installed Omada Controller Software Version to Zero if not installed
+  set_fact:
+    omada_sys_ver: "{{ omada_sys_ver | default('0') }}"
+
+
+- name: Install the Latest Omada Controller Software
+  block:
+  - name: Notify User we are upgrading Omada
+    debug:
+      msg:  "There is a newer version of Omada Controller Software to install: {{ omada_latest_ver }}"
+
+  - name: Stop Omada Controller
+    command: /usr/bin/tpeap stop
+    when: tpeap_stat.stat.exists
+  
+  - name: Backup Omada Software
+    copy:
+      src: /opt/tplink/EAPController
+      dest: /opt/tplink/EAPController-bak
+      remote-src: true
+      mode: preserve
+    when: tpeap_stat.stat.exists
+  
+  - name: Unarchive new Omada to Destination Server
+    unarchive:
+      src: "{{ role_path }}/files/omada/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64.tar.gz"
+      dest: "/tmp"
+  
+  - name: Uninstall Current Omada controller
+    expect:
+      chdir: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64"
+      command: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64/uninstall.sh"
+      echo: true
+      responses:
+        (.*)will be uninstalled(.*): y
+        (.*)backup database(.*): y
+    register: expect_result
+    failed_when: "expect_result.rc != 0 and ' success' not in expect_result.stdout"
+    when: tpeap_stat.stat.exists
+  
+  - name: Install Current Omada controller
+    expect:
+      chdir: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64"
+      command: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64/install.sh"
+      echo: true
+      responses:
+        (.*)will be installed(.*): y
+        (.*)detects that you have backup(.*): y
+    register: expect2_result
+    failed_when: "expect2_result.rc != 0 and 'Started successfully.' not in expect2_result.stdout"
+  
+  - name: Remove old TXT Version file 
+    file:
+      path: "/opt/tplink/EAPController/Omada_SDN_Controller_v{{ omada_sys_ver | trim }}_Linux_x64.txt"
+      state: absent
+  
+  - name: Create TXT file with installed version number on Omada Server
+    file:
+      path: "/opt/tplink/EAPController/Omada_SDN_Controller_v{{ omada_latest_ver | trim }}_Linux_x64.txt"
+      state: touch
+      owner: root
+      group: root
+      mode: 0644
+  
+  - name: Remove Install Directory
+    file:
+      path: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64"
+      state: absent
+  when:  ( omada_latest_ver  is version( omada_sys_ver , 'gt') )
+
+
+- name: Skipped Omada Controller Software Install
+  block:
+  - name: Notify User that they are on latest Version
+    debug:
+      msg:  "Omada Controller Software is already up-to-date.  Skipping Omada Update."
+  when: ( omada_latest_ver  is version( omada_sys_ver , 'le') )

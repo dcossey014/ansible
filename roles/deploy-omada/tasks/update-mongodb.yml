@@ -1,0 +1,55 @@
+---
+- name: Set Installed Version to Zero if MongoDB not present
+  set_fact:
+    mongo_sys_ver: "0"
+  when: ( not 'mongodb-org-server' in ansible_facts.packages )
+
+- name: Set installed version number for MongoDB
+  set_fact:
+    mongo_sys_ver: "{{ ansible_facts.packages['mongodb-org-server'][0].version | trim }}-{{ ansible_facts.packages['mongodb-org-server'][0].release  | regex_findall('(.*)\\..*') | last }} "
+  when: ( 'mongodb-org-server' in ansible_facts.packages )
+
+- name: Set latest version number of MongoDB
+  set_fact:
+    mongo_latest_ver: "{{ mongo_latest_rpm | regex_findall('.*-([0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]).*') | last }}"
+
+- name: Download and install latest MongoDB version if web version is Newer
+  block:
+    - name: Notify User of an updated Version of MongoDB
+      debug:
+        msg: "There is a newer version of MongoDB to install:  {{ mongo_latest_ver }}"
+
+    - name: Download latest MongoDB
+      import_tasks: download-latest-mongodb.yml
+      
+    - name: Stop Omada Controller
+      command: /usr/bin/tpeap stop
+      when: tpeap_stat.stat.exists
+
+    - name: Copy RPM to Server
+      copy:
+        src: "files/mongodb/{{ mongo_latest_rpm | trim }}"
+        dest: /tmp/
+
+    - name: Install Current MongoDB
+      yum:
+        name: "/tmp/{{ mongo_latest_rpm | trim }}"
+        state: present
+
+    - name: Remove Installation file.
+      file:
+        path: "/tmp/{{ mongo_latest_rpm | trim }}"
+        state: absent
+
+    - name: Start Omada Controller
+      command: /usr/bin/tpeap start
+      when: tpeap_stat.stat.exists
+  when:  (  mongo_latest_ver  is version( mongo_sys_ver , 'gt') )
+
+
+- name: Skipped MongoDB Install
+  block:
+  - name: Notify User that they are on latest Version
+    debug:
+      msg:  "MongoDB is already up-to-date.  Skipping MongoDB Update."
+  when: (  mongo_latest_ver  is version( mongo_sys_ver , 'le') )

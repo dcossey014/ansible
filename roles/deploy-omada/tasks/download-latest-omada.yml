@@ -1,0 +1,12 @@
+---
+- name: Download latest Omada Software as of 30 December 2022
+  uri:
+    url: "https://static.tp-link.com/upload/software/2022/202211/20221121/Omada_SDN_Controller_v5.7.4_Linux_x64.tar.gz"
+    dest: "{{ role_path}}/files/omada/Omada_SDN_Controller_v5.7.4_Linux_x64.tar.gz"
+    creates: "{{ role_path}}/files/omada/Omada_SDN_Controller_v5.7.4_Linux_x64.tar.gz"
+    force: true
+    mode: 0644
+    owner: ansible
+    group: ansible
+  delegate_to: localhost
+

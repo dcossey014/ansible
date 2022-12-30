@@ -1,0 +1,12 @@
+---
+- name: Download latest JSVC
+  uri:
+    url: "https://dlcdn.apache.org/commons/daemon/source/{{ jsvc_latest_src | trim }}"
+    dest: "{{ role_path}}/files/jsvc/{{ jsvc_latest_src | trim }}"
+    creates: "{{ role_path}}/files/jsvc/{{ jsvc_latest_src | trim }}"
+    force: true
+    mode: 0644
+    owner: ansible
+    group: ansible
+  delegate_to: localhost
+

@@ -1,0 +1,84 @@
+---
+- name: Get installed versions of JSVC on system
+  command:
+    cmd: jsvc -help
+  register: jsvc_help_out
+
+- name: Set JSVC version to Zero if not installed
+  set_fact:
+    jsvc_sys_ver: "0"
+  when: ( not 'jsvc (Apache Commons Daemon)' in jsvc_help_out.stdout )
+
+- name: Set JSVC version from `jsvc -help` output
+  set_fact:
+    jsvc_sys_ver: "{{ item | regex_findall('jsvc.*Apache.*([0-9]+\\.[0-9]+\\.[0-9]+).*') | last }}"
+  when: ( 'jsvc (Apache Commons Daemon)' in item )
+  with_items:
+  - "{{ jsvc_help_out.stdout_lines }}"
+
+- name: Show latest JSVC version
+  debug:
+    msg: "{{jsvc_url_output.content | regex_findall('.*(commons-daemon-[0-9]+\\.[0-9]+\\.[0-9]+\\-src\\.tar\\.gz).*') | community.general.version_sort | last }}"
+
+- name: Update JSVC if the Web Version is newer
+  block:
+  - name: Notify User of an updated Version of JSVC
+    debug:
+      msg: "There is a newer version of Apache Commons Daemon JSVC to install:  {{ jsvc_latest_ver }}"
+
+  - name: Download latest JSVC
+    import_tasks: download-latest-jsvc.yml
+
+  - name: Stop Omada Controller
+    command: /usr/bin/tpeap stop
+    when: tpeap_stat.stat.exists
+
+  - name: Untar JSVC source to /tmp
+    unarchive:
+      src: "{{ role_path }}/files/gcommons-daeom/{{ jsvc_latest_src | trim }}"
+      dest: /tmp/
+
+  - name: Build Configuration Files
+    command:
+      chdir: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix"
+      cmd: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix/support/buildconf.sh"
+
+  - name: Configure Source for build
+    command:
+      chdir: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix"
+      cmd: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix/configure --with-java=/usr/lib/jvm/java-11-openjdk"
+
+  - name: Make JSVC for installation
+    command:
+      chdir: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix"
+      cmd: "make -j2"
+
+  - name: Install JSVC into /opt/jsvc/bin
+    expect:
+      chdir: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix"
+      command: "cp -arf jsvc /opt/jsvc/bin/"
+      responses:
+        (.*)overwrite(.*): y
+
+  - name: Cleanup Build Procedures
+    command:
+      chdir: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src/src/native/unix"
+      cmd: "make clean"
+
+  - name: Remove Installation source files.
+    file:
+      path: "/tmp/commons-daemon-{{jsvc_latest_ver}}-src"
+      state: absent
+    tags: test_tar
+
+  - name: Start Omada Controller
+    command: /usr/bin/tpeap start
+    when: tpeap_stat.stat.exists
+  when:  (  jsvc_latest_ver  is version( jsvc_sys_ver , 'gt') )
+
+- name: Skipped JSVC Install
+  block:
+  - name: Notify User that they are on latest Version
+    debug: 
+      msg:  "JSVC is already up-to-date.  Skipping JSVC Update."
+  when: (  jsvc_latest_ver  is version( jsvc_sys_ver , 'le') )
