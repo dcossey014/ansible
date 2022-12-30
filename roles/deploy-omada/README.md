@@ -1,7 +1,7 @@
 Role Name
 =========
 
-This Role is designed to depoly and update the components needed for the Omada Controller v5 Software.
+This Role is designed to depoly and update the components needed for the Omada Controller v5 Software on Red Hat based Operating Systems.
 
 Requirements
 ------------
