@@ -2,7 +2,7 @@
 - name: Set Installed Version to Zero if MongoDB not present
   set_fact:
     mongo_sys_ver: "0"
-  when: ( not 'mongodb-org-server' in ansible_facts.packages )
+  when: ( 'mongodb-org-server' not in ansible_facts.packages )
 
 - name: Set installed version number for MongoDB
   set_fact:
