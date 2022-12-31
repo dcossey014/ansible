@@ -13,6 +13,7 @@
   set_fact:
     mongo_latest_ver: "{{ mongo_latest_rpm | regex_findall('.*-([0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]).*') | last }}"
 
+
 - name: Download and install latest MongoDB version if web version is Newer
   block:
     - name: Notify User of an updated Version of MongoDB

@@ -1,19 +1,19 @@
 ---
 # tasks file for deploy-omada
-- name: Install necessary packages for Omada Controller
-  package: 
-    name: "{{ item }}" 
-    state: present
-  with_items:
-  - curl
-  - java-1.8.0-openjdk.x86_64
-  - java-1.8.0-openjdk-headless.x86_64
-  - java-11-openjdk-devel.x86_64
-  - java-11-openjdk-headless.x86_64
-  - java-11-openjdk.x86_64
-  - gcc
-  - make
-  - autoconf
+#- name: Install necessary packages for Omada Controller
+#  package: 
+#    name: "{{ item }}" 
+#    state: present
+#  with_items:
+#  - curl
+#  - java-1.8.0-openjdk.x86_64
+#  - java-1.8.0-openjdk-headless.x86_64
+#  - java-11-openjdk-devel.x86_64
+#  - java-11-openjdk-headless.x86_64
+#  - java-11-openjdk.x86_64
+#  - gcc
+#  - make
+#  - autoconf
 
 - name: Get installed versions on system
   package_facts:
@@ -73,6 +73,22 @@
     jsvc_latest_ver: "{{ jsvc_latest_src | regex_findall('.*([0-9]+\\.[0-9]+\\.[0-9]+).*') | last }}"
 
 
+- name: Get Latest Omada Controller Software URL Contents
+  uri:
+    url: https://www.tp-link.com/us/support/download/omada-software-controller
+    return_content: yes
+  register: omada_url_output
+  delegate_to: localhost
+
+- name: Set latest MongoDB Version download URL
+  set_fact:
+    omada_latest_link: "{{ omada_url_output.content | regex_findall('.*(https://.*Omada_SDN_Controller_v[0-9]+\\.[0-9]+\\.[0-9]+.*\\.tar.gz).*') | community.general.version_sort | last }}"
+
+- name: Set latest MongoDB Version download URL
+  set_fact:
+    omada_latest_tgz: "{{ omada_url_output.content | regex_findall('.*(Omada_SDN_Controller_v[0-9]+\\.[0-9]+\\.[0-9]+.*\\.tar.gz).*') | community.general.version_sort | last }}"
+
+
 - name: Download latest MongoDB v4 - Dir Does Not Exist
   block:
   - name: Notify User MongoDB directory does not exist
@@ -128,11 +144,12 @@
       group: ansible
     delegate_to: localhost
 
-  - name: Download latest Omada Software as of 30 December 2022
-    import_tasks: download-omada-v5.7.4.yml
+  - name: Download latest Omada Software
+    import_tasks: download-latest-omada.yml
   when: ( not dir_data.results[2].stat.exists )
 
 
+### Update Programs As Needed ###
 - name: Update MongoDB
   import_tasks: update-mongodb.yml
 
@@ -142,7 +159,17 @@
 - name: Update Omada Controller Software
   import_tasks: update-omada.yml
 
-- name: Notify User no automatic download of Omada Controller Software
+### Debug Information ###
+- name: Debug information for MongoDB
   debug:
-    msg:  "Unfortunately at this time, there is no way to automatically download the latest Omada \nController Software.  This role is hard coded to download 5.7.4 from a static link.  \nIf there is a newer version, place the latest TARBALL into {{ role_path }}/files/omada and this role \nwill automatically install the software if it is newer than the currently installed version on your Omada Server."
+    msg: "Newest MongoDB Version: {{ mongo_latest_ver }} \nInstalled MongoDB Version: {{ mongo_sys_ver }}"
+
+- name: Debug information for JSVC
+  debug:
+    msg: "Newest JSVC Version: {{ jsvc_latest_ver }} \nInstalled JSVC Version: {{ jsvc_sys_ver }}"
+
+- name: Debug information for Omada
+  debug:
+    msg: "Newest Omada Version: {{ omada_latest_ver }} \nInstalled Omada Version: {{ omada_sys_ver }}"
+
 

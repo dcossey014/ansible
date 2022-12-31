@@ -1,20 +1,7 @@
 ---
-- name: Get Omada Controller Software Versions in Role-Path/files/omada Directory
-  find:
-    paths: "{{ role_path }}/files/omada/"
-    use_regex: true
-    pattern: "^Omada_SDN_Controller.*"
-  delegate_to: localhost
-  register: omada_file_vers
-
-- name: Create list of Omada versions in {{ role_path }}/files/omada
-  set_fact:
-    omada_file_ver: "{{ omada_file_ver | default([]) + [ item.path | regex_findall('.*Omada_SDN_Controller_v([0-9]+\\.[0-9]+\\.[0-9]+)_Linux_x64.tar.gz.*') | last ] }}"
-  with_items: " {{ omada_file_vers.files }}"
-
 - name: Set Latest Omada Software Version
   set_fact:
-    omada_latest_ver: "{{ omada_file_ver | community.general.version_sort | last | trim }}"
+    omada_latest_ver: "{{ omada_latest_tgz | regex_findall('.*([0-9]+\\.[0-9]+\\.[0-9]+).*') | last }}"
 
 - name: Get Installed Omada Controller Software Version
   find:
@@ -53,7 +40,7 @@
   
   - name: Unarchive new Omada to Destination Server
     unarchive:
-      src: "{{ role_path }}/files/omada/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64.tar.gz"
+      src: "{{ role_path }}/files/omada/{{ omada_latest_tgz | trim }}"
       dest: "/tmp"
   
   - name: Uninstall Current Omada controller

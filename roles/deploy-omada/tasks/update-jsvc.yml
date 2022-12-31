@@ -16,9 +16,6 @@
   with_items:
   - "{{ jsvc_help_out.stdout_lines }}"
 
-- name: Show latest JSVC version
-  debug:
-    msg: "{{jsvc_url_output.content | regex_findall('.*(commons-daemon-[0-9]+\\.[0-9]+\\.[0-9]+\\-src\\.tar\\.gz).*') | community.general.version_sort | last }}"
 
 - name: Update JSVC if the Web Version is newer
   block:
