@@ -86,7 +86,7 @@
 
 - name: Set latest MongoDB Version download URL
   set_fact:
-    omada_latest_tgz: "{{ omada_url_output.content | regex_findall('.*(Omada_SDN_Controller_v[0-9]+\\.[0-9]+\\.[0-9]+.*\\.tar.gz).*') | community.general.version_sort | last }}"
+    omada_latest_tgz: "{{ omada_latest_link | regex_findall('.*(Omada_SDN_Controller_v[0-9]+\\.[0-9]+\\.[0-9]+.*\\.tar.gz).*') | last }}"
 
 
 - name: Download latest MongoDB v4 - Dir Does Not Exist
