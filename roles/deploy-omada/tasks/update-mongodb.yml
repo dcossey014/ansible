@@ -27,6 +27,11 @@
       command: /usr/bin/tpeap stop
       when: tpeap_stat.stat.exists
 
+    - name: Stop MongoDB service
+      systemd_service:
+        name: mongod
+        state: stopped
+
     - name: Copy RPM to Server
       copy:
         src: "files/mongodb/{{ mongo_latest_rpm | trim }}"
@@ -41,6 +46,11 @@
       file:
         path: "/tmp/{{ mongo_latest_rpm | trim }}"
         state: absent
+
+    - name: Start MongoDB service
+      systemd_service:
+        name: mongod
+        state: started
 
     - name: Start Omada Controller
       command: /usr/bin/tpeap start
