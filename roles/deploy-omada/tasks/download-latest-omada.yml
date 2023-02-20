@@ -1,5 +1,5 @@
 ---
-- name: Download latest MongoDB
+- name: Download latest Omada Controller Software
   uri:
     url: "{{ omada_latest_link }}"
     dest: "{{ role_path }}/files/omada/{{ omada_latest_tgz | trim }}"

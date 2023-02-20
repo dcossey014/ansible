@@ -1,9 +1,9 @@
 ---
 - name: Download latest MongoDB
   uri:
-    url: "https://repo.mongodb.org/yum/redhat/8/mongodb-org/4.4/x86_64/RPMS/{{ mongo_latest_rpm | trim }}"
-    dest: "{{ role_path }}/files/mongodb/{{ mongo_latest_rpm | trim }}"
-    creates: "{{ role_path }}/files/mongodb/{{ mongo_latest_rpm | trim }}"
+    url: "https://repo.mongodb.org/yum/redhat/8/mongodb-org/4.4/x86_64/RPMS/mongodb-org-server-4.4.18-1.el8.x86_64.rpm"
+    dest: "{{ role_path }}/files/mongodb/mongodb-org-server-4.4.18-1.el8.x86_64.rpm"
+    creates: "{{ role_path }}/files/mongodb/mongodb-org-server-4.4.18-1.el8.x86_64.rpm"
     force: true
     mode: 0644
     owner: ansible

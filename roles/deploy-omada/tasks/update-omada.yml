@@ -26,6 +26,9 @@
     debug:
       msg:  "There is a newer version of Omada Controller Software to install: {{ omada_latest_ver }}"
 
+  - name: Download latest Omada Software
+    import_tasks: download-latest-omada.yml
+
   - name: Stop Omada Controller
     command: /usr/bin/tpeap stop
     when: tpeap_stat.stat.exists
@@ -34,7 +37,7 @@
     copy:
       src: /opt/tplink/EAPController
       dest: /opt/tplink/EAPController-bak
-      remote-src: true
+      remote_src: true
       mode: preserve
     when: tpeap_stat.stat.exists
   
@@ -48,6 +51,7 @@
       chdir: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64"
       command: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64/uninstall.sh"
       echo: true
+      timeout: 360
       responses:
         (.*)will be uninstalled(.*): y
         (.*)backup database(.*): y
@@ -60,6 +64,7 @@
       chdir: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64"
       command: "/tmp/Omada_SDN_Controller_v{{omada_latest_ver}}_Linux_x64/install.sh"
       echo: true
+      timeout: 360
       responses:
         (.*)will be installed(.*): y
         (.*)detects that you have backup(.*): y
