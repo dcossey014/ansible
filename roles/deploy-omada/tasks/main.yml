@@ -44,33 +44,19 @@
     path: "/usr/bin/tpeap"
   register: tpeap_stat
 
+- name: Copy MongoDB Server 4.4 Repo file to system
+  copy:
+    src: files/mongodb/mongodb-org-4.4.repo
+    dest: /etc/yum.repos.d
 
-- name: Get Latest Mongo RPM URL contents
-  debug:  
-    msg:  "MongoDB Repo has begun using javascript in their website making previous solution invalid.  Please, visit https://repo.mongodb.org/yum/redhat/8/mongodb-org/4.4/x86_64/RPMS to download latest mongodb RPM file and place the file in /opt/ansible/roles/deploy-omada/files/mongodb/.  As of last update to this playbook that was Version:  4.4.18-1.el8"
-
-#- name: Get Latest Mongo RPM URL contents
-#  uri:
-#    url: https://repo.mongodb.org/yum/redhat/8/mongodb-org/4.4/x86_64/RPMS
-#    return_content: yes
-#  register: mongo_url_output
-#  delegate_to: localhost
-#  failed_when: "'mongodb-org-server' not in mongo_url_output.content"
-#
-#- name: Set latest MongoDB Version Number
-#  set_fact:
-#    mongo_latest_rpm: "{{ mongo_url_output.content | regex_findall('.*(mongodb-org-server-[0-9]+\\.[0-9]+\\.[0-9]+\\-[0-9]+.*\\.rpm).*') | community.general.version_sort | last }}"
-  
-- name: Find latest MongoDB RPM in Roles Directory
-  find:
-    paths:  "/opt/ansible/roles/deploy-omada/files/mongodb/"
-    patterns:  "*mongodb-org-server*"
-  register: ansible_mongodb
-  delegate_to: localhost
-
-- name: Set latest MongoDB Version Number
-  set_fact:
-    mongo_latest_rpm: "{{ ansible_mongodb.files | regex_findall('.*(mongodb-org-server.*rpm).*') | community.general.version_sort | last }}"
+- name: Update DNF/YUM Cache
+  yum:
+    update_cache: true
+ 
+- name: Update MongoDB
+  package:
+    name: mongodb-org-server
+    state: latest
   
 - name: Get Latest JSVC Commons Daemon URL contents
   uri:
@@ -106,30 +92,6 @@
 - name: Set latest Omada Version TARBALL
   set_fact:
     omada_latest_tgz: "{{ omada_latest_link | regex_findall('.*(Omada_SDN_Controller_v[0-9]+\\.[0-9]+\\.[0-9]+.*\\.tar.gz).*') | last }}"
-
-#- name: Debug Output for Omada Version
-#  debug: 
-#    msg: "Omada URL:  {{ omada_latest_link }} \n latest tarball:  {{ omada_latest_tgz }}"
-
-#- name: Download latest MongoDB v4 - Dir Does Not Exist
-#  block:
-#  - name: Notify User MongoDB directory does not exist
-#    debug:
-#      msg: "Directory files/mongodb does not exist.  Will need to download latest supported MongoDB"
-#    delegate_to: localhost
-#
-#  - name: Create Directory for MongoDB files
-#    file:
-#      path: "{{ role_path }}/files/mongodb"
-#      state: directory
-#      owner: ansible
-#      group: ansible
-#    delegate_to: localhost
-#
-#  - name: Download latest MongoDB for Initialization
-#    import_tasks: download-latest-mongodb.yml
-#  when: ( not dir_data.results[0].stat.exists )
-
 
 - name: Download latest JSVC - Dir Does Not Exist
   block:
@@ -172,9 +134,6 @@
 
 
 ### Update Programs As Needed ###
-#- name: Update MongoDB
-#  import_tasks: update-mongodb.yml
-
 - name: update JSVC
   import_tasks: update-jsvc.yml
 
@@ -182,10 +141,6 @@
   import_tasks: update-omada.yml
 
 ### Debug Information ###
-#- name: Debug information for MongoDB
-#  debug:
-#    msg: "Newest MongoDB Version: {{ mongo_latest_ver }} \nInstalled MongoDB Version: {{ mongo_sys_ver }}"
-
 - name: Debug information for JSVC
   debug:
     msg: "Newest JSVC Version: {{ jsvc_latest_ver }} \nInstalled JSVC Version: {{ jsvc_sys_ver }}"
